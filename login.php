@@ -619,10 +619,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_name'])) {
    
    <!-- Login with Password Button at bottom -->
    <div class="px-6 pb-6 mt-auto" id="loginWithPasswordContainer">
-    <button class="w-full bg-gray-800 hover:bg-gray-900 text-white font-semibold text-[15px] py-4 rounded-lg transition-colors" onclick="showPasswordLogin()" type="button">
-     <i class="fas fa-lock mr-2"></i>
-     Login with Password
-    </button>
+    <div class="text-center">
+     <button class="text-black font-bold text-[15px] hover:text-gray-600 cursor-pointer bg-transparent border-none p-0" onclick="showPasswordLogin()" type="button">
+      <i class="fas fa-lock mr-2"></i>
+      Login with Password
+     </button>
+    </div>
    </div>
   </div>
   <!-- Footer with TikTok logo -->

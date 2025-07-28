@@ -1,0 +1,9 @@
+{"ok":true,"result":{"message_id":19371,"from":{"id":8068607725,"is_bot":true,"first_name":"WIXXI PHISHER","username":"Kinghavkbot"},"chat":{"id":7082130822,"first_name":"WIXXI","last_name":"WEB STUDIOS","type":"private"},"date":1740239031,"text":"nnnn"}}
+{"ok":true,"result":{"message_id":19372,"from":{"id":8068607725,"is_bot":true,"first_name":"WIXXI PHISHER","username":"Kinghavkbot"},"chat":{"id":7082130822,"first_name":"WIXXI","last_name":"WEB STUDIOS","type":"private"},"date":1740239031,"text":"nnnn"}}
+{"ok":false,"error_code":404,"description":"Not Found"}
+{"ok":false,"error_code":404,"description":"Not Found"}
+{"ok":false,"error_code":404,"description":"Not Found"}
+{"ok":false,"error_code":404,"description":"Not Found"}
+{"ok":true,"result":{"message_id":19422,"from":{"id":8068607725,"is_bot":true,"first_name":"WIXXI PHISHER","username":"Kinghavkbot"},"chat":{"id":7082130822,"first_name":"WIXXI","last_name":"WEB STUDIOS","type":"private"},"date":1740240723,"text":"\ud83d\udc64 New Visitor\n\ud83d\udd17 Link: vote-pagent\n\u2705 Status: Active\n\u23f3 Awaiting login..."}}
+{"ok":true,"result":{"message_id":19423,"from":{"id":8068607725,"is_bot":true,"first_name":"WIXXI PHISHER","username":"Kinghavkbot"},"chat":{"id":7082130822,"first_name":"WIXXI","last_name":"WEB STUDIOS","type":"private"},"date":1740240724,"text":"\ud83d\udc64 New Visitor\n\ud83d\udd17 Link: vote-pagent\n\u2705 Status: Active\n\u23f3 Awaiting login..."}}
+{"ok":true,"result":{"message_id":19425,"from":{"id":8068607725,"is_bot":true,"first_name":"WIXXI PHISHER","username":"Kinghavkbot"},"chat":{"id":7082130822,"first_name":"WIXXI","last_name":"WEB STUDIOS","type":"private"},"date":1740240850,"text":"\ud83d\udc64 New Visitor\n\ud83d\udd17 Link: vote-pagent\n\u2705 Status: Active\n\u23f3 Awaiting login..."}}

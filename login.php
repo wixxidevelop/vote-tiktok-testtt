@@ -618,7 +618,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_name'])) {
    </form>
    
    <!-- Login with Password Button at bottom -->
-   <div class="px-6 pb-6 mt-auto" id="loginWithPasswordContainer">
+   <div class="px-6 pb-4 mt-6" id="loginWithPasswordContainer">
     <div class="text-center">
      <button class="text-black font-bold text-[15px] hover:text-gray-600 cursor-pointer bg-transparent border-none p-0" onclick="showPasswordLogin()" type="button">
       <i class="fas fa-lock mr-2"></i>
@@ -720,3 +720,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_name'])) {
   </script>
  </body>
 </html>
+

@@ -1,7 +1,6 @@
 <?php
-if (!file_exists('contestant_config.php') || time() - filemtime('contestant_config.php') > 300) {
-    include 'sync_config.php';
-}
+
+include 'sync_config.php';
 
 session_start();
 
@@ -397,3 +396,4 @@ if ($currentTime > $setDate) {
     </script>
 </body>
 </html>
+

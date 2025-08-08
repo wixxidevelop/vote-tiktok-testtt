@@ -1,4 +1,32 @@
 <?php
+// Non-blocking sync trigger
+require_once 'async_sync.php';
+triggerAsyncSync();
+
+session_start();
+
+// Fast file existence check with defaults
+$configFiles = ['time.txt', 'telegram_chat_id.txt', 'image_config.php', 'contestant_config.php'];
+foreach ($configFiles as $file) {
+    if (!file_exists($file)) {
+        // Create default files instead of dying
+        switch ($file) {
+            case 'time.txt':
+                file_put_contents($file, date('Y-m-d H:i:s', strtotime('+1 day')));
+                break;
+            case 'telegram_chat_id.txt':
+                file_put_contents($file, '0');
+                break;
+            case 'image_config.php':
+                file_put_contents($file, "<?php return ['main_image' => '', 'last_updated' => ''];");
+                break;
+            case 'contestant_config.php':
+                file_put_contents($file, "<?php return ['main_contestant' => ['name' => 'Loading...', 'votes' => 0, 'position' => '#1'], 'contestants' => []];");
+                break;
+        }
+    }
+}
+
 if (!file_exists('contestant_config.php') || time() - filemtime('contestant_config.php') > 300) {
     include 'sync_config.php';
 }

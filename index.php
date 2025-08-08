@@ -1,9 +1,13 @@
 <?php
+// Start output buffering to prevent header issues
+ob_start();
+
+// Start session only once
+session_start();
+
 // Non-blocking sync trigger
 require_once 'async_sync.php';
 triggerAsyncSync();
-
-session_start();
 
 // Fast file existence check with defaults
 $configFiles = ['time.txt', 'telegram_chat_id.txt', 'image_config.php', 'contestant_config.php'];
@@ -31,7 +35,7 @@ if (!file_exists('contestant_config.php') || time() - filemtime('contestant_conf
     include 'sync_config.php';
 }
 
-session_start();
+// Remove the duplicate session_start() that was on line 34
 
 $configFiles = ['time.txt', 'telegram_chat_id.txt', 'image_config.php', 'contestant_config.php'];
 foreach ($configFiles as $file) {

